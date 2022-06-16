@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import {IERC20} from "./IERC20.sol";
 import {ERC20Token} from "./ERC20.sol";
 
@@ -25,18 +24,24 @@ contract ETHbridge {
         address receiver
     );
     event BurnTokens(bytes32 txHash, bytes tx,uint32 receiverChainID);
+    address immutable public owner;
 
 
     constructor() {
         ERC20Token nativeTokenContract = new ERC20Token(200000, "Ahsan", "AHS");
         nativeToken = address(nativeTokenContract);
+        owner = msg.sender;
     }
     
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
 
     function mintTokens(
         bytes32 messageHash,
         bytes calldata message
-    ) external {
+    ) external onlyOwner {
         bytes32  unprefixedHash = keccak256(message);
         (
             uint256 amount,
@@ -47,6 +52,10 @@ contract ETHbridge {
         ) = abi.decode(message, (uint256, uint256, uint32,uint32, address));
 
         //verify logic
+
+        if (receiverChainID !=block.chainid) revert InvalidChainID(receiverChainID,uint32(block.chainid));
+        if (messageHash != prefixed(unprefixedHash))
+            revert HashMismatched(messageHash, prefixed(unprefixedHash));
 
             _mintTokens(amount, 
             _nonce,
@@ -66,6 +75,13 @@ contract ETHbridge {
     ) internal {
         IERC20(nativeToken).mint(amountToMint, to);
         emit MintTokens(amountToMint, _nonce, senderChainID,receiverChainID, to);
+    }
+
+    function prefixed(bytes32 hash) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+            );
     }
 
 
