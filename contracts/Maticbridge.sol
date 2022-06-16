@@ -4,18 +4,18 @@ pragma solidity ^0.8.0;
 import {IERC20} from "./IERC20.sol";
 import {ERC20Token} from "./ERC20.sol";
 
-contract ETHbridge {
+contract MaticBridge {
 
 
     
-    error InvalidChainID();
-    error HashMismatched();
+    error InvalidChainID(uint32 actual, uint32 expected);
+    error HashMismatched(bytes32 h1, bytes32 h2);
     error TransferFromFailed();
     error ZeroAmount();
     error ZeroAddressPassed();
     error UnlockingTokensFailed();
     uint256 public nonce;
-    address immutable nativeToken;
+    address public immutable nativeToken;
     event MintTokens(
         uint256 amountToUnlock,
         uint256 _nonce,
@@ -28,7 +28,7 @@ contract ETHbridge {
 
 
     constructor() {
-        ERC20Token nativeTokenContract = new ERC20Token(200000, "Ahsan", "AHS");
+        ERC20Token nativeTokenContract = new ERC20Token(200000, "Ahsan", "AHS", msg.sender);
         nativeToken = address(nativeTokenContract);
         owner = msg.sender;
     }

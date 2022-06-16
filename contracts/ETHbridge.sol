@@ -20,11 +20,11 @@ contract ETHbridge {
     error TransferFromFailed();
     error UnlockingTokensFailed();
     uint256 public nonce;
-    address immutable nativeToken;
+    address public immutable nativeToken;
 
 
     constructor() {
-        ERC20Token nativeTokenContract = new ERC20Token(200000, "KUMAIL", "KUM");
+        ERC20Token nativeTokenContract = new ERC20Token(200000, "KUMAIL", "KUM", msg.sender);
         nativeToken = address(nativeTokenContract);
     }
     

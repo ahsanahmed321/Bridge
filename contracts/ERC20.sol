@@ -9,8 +9,9 @@ contract ERC20Token is ERC20 {
     constructor(
         uint256 initialSupply,
         string memory tokenName,
-        string memory tokenSymbol
+        string memory tokenSymbol,
+        address to
     ) ERC20(tokenName, tokenSymbol) {
-        _mint(msg.sender, initialSupply);
+        _mint(to, initialSupply);
     }
 }
