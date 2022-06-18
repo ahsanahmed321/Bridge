@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IERC20} from "./IERC20.sol";
 import {ERC20Token} from "./ERC20.sol";
+import "hardhat/console.sol";
 
 contract MaticBridge {
     error InvalidChainID(uint32 actual, uint32 expected);
@@ -53,7 +54,7 @@ contract MaticBridge {
         //verify logic
 
         if (messageHash != unprefixedHash)
-            revert HashMismatched(messageHash, prefixed(unprefixedHash));
+            revert HashMismatched(messageHash, unprefixedHash);
 
         _mintTokens(amount, _nonce, receiverChainID, to);
     }
@@ -68,13 +69,6 @@ contract MaticBridge {
         emit MintTokens(amountToMint, _nonce, receiverChainID, to);
     }
 
-    function prefixed(bytes32 hash) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-            );
-    }
-
     function burnTokens(
         uint256 amount,
         uint32 receiverChainID,
@@ -84,25 +78,13 @@ contract MaticBridge {
         if (recipient == address(0)) revert ZeroAddressPassed();
 
         //ask
-        IERC20(nativeToken).burnFrom(amount, msg.sender);
+        IERC20(nativeToken).burnFrom(msg.sender, amount);
         uint256 oldNonce = nonce;
         nonce++;
 
         emit BurnTokens(
-            keccak256(
-                abi.encode(
-                    amount,
-                    oldNonce,
-                    receiverChainID,
-                    recipient
-                )
-            ),
-            abi.encode(
-                amount,
-                oldNonce,
-                receiverChainID,
-                recipient
-            ),
+            keccak256(abi.encode(amount, oldNonce, receiverChainID, recipient)),
+            abi.encode(amount, oldNonce, receiverChainID, recipient),
             receiverChainID
         );
     }

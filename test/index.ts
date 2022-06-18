@@ -8,7 +8,6 @@ import {
   ETHbridge,
   MaticBridge__factory,
   MaticBridge,
-  ERC20,
 } from "../typechain";
 
 const ERC20ABI = require("../artifacts/contracts/ERC20.sol/ERC20Token.json");
@@ -19,7 +18,6 @@ describe("Bridge", function () {
   let ethTokenAddress: string;
   let matBridge: MaticBridge;
   let matTokenAddress: string;
-  let matToken: any;
 
   beforeEach(async () => {
     accounts = await ethers.getSigners();
@@ -62,32 +60,56 @@ describe("Bridge", function () {
     const messageHash = ethers.utils.keccak256(message);
     await matBridge.mintTokens(messageHash, message);
 
-    matToken = new ethers.Contract(
+    const matToken = new ethers.Contract(
       matTokenAddress,
       ERC20ABI.abi,
       accounts[1]
     );
-    console.log(matToken.address, "mat add")
+    console.log(matToken.address, "mat add");
     const receivingAmount = await matToken.balanceOf(accounts[1].address);
-    console.log(receivingAmount, "old balance")
+    console.log(receivingAmount, "old balance");
     expect(Number(ethers.utils.formatEther(receivingAmount))).greaterThan(0);
   });
 
-  it("Testing unlock and Burning of Token", async function () {
-    // yahan per mat token badal kese gaya?
-
-    // console.log("mat", matToken)
-    await matToken.approve(
-      matBridge.address,
-      ethers.utils.parseEther("100")
+  it("Testing Burning and Unlocking of Token", async function () {
+    const ethToken = new ethers.Contract(
+      ethTokenAddress,
+      ERC20ABI.abi,
+      accounts[0]
     );
-    const old = await matToken.balanceOf(accounts[1].address);
 
+    ethToken.transfer(ethBridge.address, ethers.utils.parseEther("500"));
 
+    const matToken = new ethers.Contract(
+      matTokenAddress,
+      ERC20ABI.abi,
+      accounts[0]
+    );
+    await matToken.approve(matBridge.address, ethers.utils.parseEther("200"));
 
-    await matBridge.burnTokens(ethers.utils.parseEther("100"), 1, accounts[1].address)
-    const newBal = await matToken.balanceOf(accounts[1].address);
+    const oldMatTokenBalance = await matToken.balanceOf(accounts[0].address);
+    await matBridge.burnTokens(
+      ethers.utils.parseEther("100"),
+      4,
+      accounts[1].address
+    );
+    const newMatTokenBalance = await matToken.balanceOf(accounts[0].address);
+    expect(Number(ethers.utils.formatEther(newMatTokenBalance))).lessThan(
+      Number(ethers.utils.formatEther(oldMatTokenBalance))
+    );
 
-    console.log(old, "new balance", newBal)
+    const abi = ethers.utils.defaultAbiCoder;
+    const message = abi.encode(
+      ["uint", "uint", "uint", "address"],
+      [ethers.utils.parseEther("100"), 0, 4, accounts[1].address]
+    );
+    const messageHash = ethers.utils.keccak256(message);
+
+    const oldEthTokenBalance = await ethToken.balanceOf(accounts[1].address);
+    await ethBridge.unlock(messageHash, message);
+    const newEthTokenBalance = await ethToken.balanceOf(accounts[1].address);
+    expect(Number(ethers.utils.formatEther(newEthTokenBalance))).greaterThan(
+      Number(ethers.utils.formatEther(oldEthTokenBalance))
+    );
   });
 });

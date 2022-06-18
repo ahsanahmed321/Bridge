@@ -3,13 +3,11 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
-
 interface IERC20 {
-
     function mint(uint256 _value, address _beneficiary) external;
 
-    function burnFrom(uint256 _value, address _beneficiary) external;
-    
+    function burnFrom(address _beneficiary, uint256 _value) external;
+
     function allowance(address owner, address spender)
         external
         view

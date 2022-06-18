@@ -9,16 +9,17 @@ contract ETHbridge {
     event UnlockTokens(
         uint256 amountToUnlock,
         uint256 _nonce,
-        uint32 senderChainID,
         uint32 receiverChainID,
         address receiver
     );
     error ZeroAddressPassed();
+    error HashMismatched(bytes32 h1, bytes32 h2);
     error ZeroAmount();
     error TransferFromFailed();
     error UnlockingTokensFailed();
     uint256 public nonce;
     address public immutable nativeToken;
+    address public immutable owner;
 
     constructor() {
         ERC20Token nativeTokenContract = new ERC20Token(
@@ -28,6 +29,12 @@ contract ETHbridge {
             msg.sender
         );
         nativeToken = address(nativeTokenContract);
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Caller is not the owner");
+        _;
     }
 
     function lock(
@@ -56,21 +63,32 @@ contract ETHbridge {
         );
     }
 
+    function unlock(bytes32 messageHash, bytes calldata message)
+        external
+        onlyOwner
+    {
+        bytes32 unprefixedHash = keccak256(message);
+        (
+            uint256 amount,
+            uint256 _nonce,
+            uint32 receiverChainID,
+            address to
+        ) = abi.decode(message, (uint256, uint256, uint32, address));
+
+        if (messageHash != unprefixedHash)
+            revert HashMismatched(messageHash, unprefixedHash);
+
+        _unlockTokens(amount, _nonce, receiverChainID, to);
+    }
+
     function _unlockTokens(
         uint256 amountToUnlock,
         uint256 _nonce,
-        uint32 senderChainID,
         uint32 receiverChainID,
         address to
     ) internal {
         if (IERC20(nativeToken).transfer(to, amountToUnlock) == false)
             revert UnlockingTokensFailed();
-        emit UnlockTokens(
-            amountToUnlock,
-            _nonce,
-            senderChainID,
-            receiverChainID,
-            to
-        );
+        emit UnlockTokens(amountToUnlock, _nonce, receiverChainID, to);
     }
 }
