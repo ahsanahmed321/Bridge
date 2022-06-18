@@ -93,7 +93,6 @@ contract MaticBridge {
                 abi.encode(
                     amount,
                     oldNonce,
-                    uint32(block.chainid),
                     receiverChainID,
                     recipient
                 )
@@ -101,7 +100,6 @@ contract MaticBridge {
             abi.encode(
                 amount,
                 oldNonce,
-                uint32(block.chainid),
                 receiverChainID,
                 recipient
             ),
