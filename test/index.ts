@@ -104,9 +104,17 @@ describe("Bridge", function () {
       [ethers.utils.parseEther("100"), 0, 4, accounts[1].address]
     );
     const messageHash = ethers.utils.keccak256(message);
+    const signature = await accounts[0].signMessage(
+      ethers.utils.arrayify(messageHash)
+    );
+    console.log("signature ==>>", signature);
+
+    console.log("singer on test", accounts[0].address);
+
+    console.log("singer on test", accounts[0]);
 
     const oldEthTokenBalance = await ethToken.balanceOf(accounts[1].address);
-    await ethBridge.unlock(messageHash, message);
+    await ethBridge.unlock(messageHash, message, signature);
     const newEthTokenBalance = await ethToken.balanceOf(accounts[1].address);
     expect(Number(ethers.utils.formatEther(newEthTokenBalance))).greaterThan(
       Number(ethers.utils.formatEther(oldEthTokenBalance))
