@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import {IERC20} from "./IERC20.sol";
 import {ERC20Token} from "./ERC20.sol";
 
-import "hardhat/console.sol";
-
 contract ETHbridge {
     event LockTokens(bytes32 txHash, bytes tx, uint32 receiverChainID);
     event UnlockTokens(
@@ -33,11 +31,6 @@ contract ETHbridge {
         );
         nativeToken = address(nativeTokenContract);
         owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Caller is not the owner");
-        _;
     }
 
     function lock(
@@ -70,7 +63,7 @@ contract ETHbridge {
         bytes32 messageHash,
         bytes calldata message,
         bytes memory signature
-    ) external onlyOwner {
+    ) external {
         bytes32 unprefixedHash = keccak256(message);
         (
             uint256 amount,
@@ -98,7 +91,6 @@ contract ETHbridge {
         (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
 
         address signer = ecrecover(ethSignedMessage, v, r, s);
-        console.log("signer==>>", signer, owner);
         return signer == owner;
     }
 
